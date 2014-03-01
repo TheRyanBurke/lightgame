@@ -37,6 +37,7 @@ function preload() {
 var player;
 var platforms;
 var cursors;
+var keyboard;
 
 var stars;
 
@@ -78,6 +79,10 @@ function create() {
     //player.animations.add('left', [0, 1, 2, 3], 10, true);
     //player.animations.add('right', [5, 6, 7, 8], 10, true);
 
+    //light init
+    player.light = new LightObject(player, litState.LIT, 5, 'dude', 'dude', 'player');
+
+
     //  Finally some stars to collect
     stars = game.add.group();
 
@@ -96,6 +101,8 @@ function create() {
 
     //  Our controls.
     cursors = game.input.keyboard.createCursorKeys();
+
+    keyboard = game.input.keyboard;
     
 }
 
@@ -130,7 +137,7 @@ function update() {
         //  Stand still
         player.animations.stop();
 
-        player.frame = 4;
+        //player.frame = 4;
     }
     
     //  Allow the player to jump if they are touching the ground.
@@ -139,14 +146,79 @@ function update() {
         player.body.velocity.y = -600;
     }
 
+    //mod lighting of player -- testing only
+    if (keyboard.isDown(Phaser.Keyboard.ONE))
+    {
+        player.light.setLighting(litState.UNLIT);
+    }
+    else if (keyboard.isDown(Phaser.Keyboard.TWO))
+    {
+        player.light.setLighting(litState.PARTIAL);
+    }
+    else if (keyboard.isDown(Phaser.Keyboard.THREE))
+    {
+        player.light.setLighting(litState.LIT);
+    }
+
 }
 
+// from phaser demo
 function collectStar (player, star) {
     
     // Removes the star from the screen
-    star.kill();
+    if(player.light.getLighting() === litState.LIT)
+    {
+        star.kill();
+    }
 
 }
+
+function LightObject(_owner, _litState, _radius, _unlitSprite, _partialSprite, _litSprite) {
+    this.owner = _owner;
+    this.lightSprites = [_unlitSprite, _partialSprite, _litSprite];
+    this.setLighting(_litState);
+    this.setRadius(_radius);
+}
+
+LightObject.prototype.owner = null;
+LightObject.prototype.lightSprites = [];
+
+var litState = {
+    UNLIT: 0,
+    PARTIAL: 1,
+    LIT: 2
+};
+
+// state of this object being lit
+LightObject.prototype.lit = litState.UNLIT;
+
+LightObject.prototype.setLighting = function(_litState) {
+    if(this.lit != _litState) 
+    {
+        this.lit = _litState;
+        this.updateSpriteBasedOnLighting();
+    }
+}
+
+LightObject.prototype.getLighting = function() {
+    return this.lit;
+}
+
+// how far away does thie entity light others
+LightObject.prototype.radius = 0;
+
+LightObject.prototype.setRadius = function(_radius) {
+    this.radius = _radius;
+}
+
+LightObject.prototype.getRadius = function() {
+    return this.radius;
+}
+
+LightObject.prototype.updateSpriteBasedOnLighting = function() {
+    this.owner.loadTexture(this.lightSprites[this.getLighting()], 0);
+}
+
 
 </script>
 
