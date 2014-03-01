@@ -2,11 +2,11 @@
 
 # Submission by Ansible Games
 
- * Lou Manglass
- * Ryan Burke
- * Jason Markowitz
+* Lou Manglass
+* Ryan Burke
+* Jason Markowitz
 
- Built with Phaser.io
+Built with Phaser.io
 
- http://docs.phaser.io/Phaser.html
- http://examples.phaser.io/
+* http://docs.phaser.io/Phaser.html
+* http://examples.phaser.io/
