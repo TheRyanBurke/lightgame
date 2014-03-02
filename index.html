@@ -32,13 +32,14 @@ var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create
 function preload() {
 
   // dark ages
-  game.load.tilemap('level1', 'assets/level1.json', null, Phaser.Tilemap.TILED_JSON);
-  game.load.tilemap('level2', 'assets/level2.json', null, Phaser.Tilemap.TILED_JSON);
+  game.load.tilemap('level4', 'assets/level4.json', null, Phaser.Tilemap.TILED_JSON);
   game.load.image('tiles', 'assets/tiles.png');
   game.load.image('tilesheet', 'assets/tilesheet.png');
   game.load.image('player', 'assets/player.png');
   game.load.image('playerghost', 'assets/playerghost.png');
   game.load.image('background', 'assets/bg_environment.png');
+  game.load.image('platform', 'assets/platform_64.png');
+  game.load.image('wall', 'assets/bg_environment_64.png');
 
   game.load.image('sparkle', 'assets/sparkle.png');
 
@@ -67,6 +68,9 @@ var deluminator;
 var deluminatorCircle = null;
 
 var platforms;
+var walls;
+var doors;
+
 var cursors;
 var keyboard;
 var bg;
@@ -76,7 +80,7 @@ var stars;
 
 var shots;
 
-var BRIGHTNESS_RADIUS = 50; //pixels of radius per light held
+var BRIGHTNESS_RADIUS = 75; //pixels of radius per light held
 var DELUMINATOR_RADIUS = 110; //range you can steal lights
 
 // phaser game init
@@ -89,7 +93,7 @@ function create() {
     
     bg.fixedToCamera = true;
     
-	map = game.add.tilemap('level2');
+	map = game.add.tilemap('level4');
 	map.addTilesetImage('tilesheet');
 	map.setCollisionByExclusion([ 0 ]);
 
@@ -129,7 +133,7 @@ function create() {
     //player.animations.add('right', [5, 6, 7, 8], 10, true);
 
     //light init
-    player.light = new LightObject(player, 1, 'dude', 'player');
+    player.light = new LightObject(player, 0, 'dude', 'player');
 
 
     //  Finally some stars to collect
@@ -153,10 +157,32 @@ function create() {
 
     torches = game.add.group();
 
+    //  And now we convert all of the Tiled objects with an ID of 34 into sprites within the coins group
+    map.createFromObjects('Object Layer 1', 4, 'torch', 0, true, false, torches);
+    torches.forEach(function(_torch) {
+        _torch.light = new LightObject(_torch, 1, 'unlittorch', 'torch');
+        _torch.body.setCircle(_torch.light.getRadius());
+    }, this, true);
+
+    platforms = game.add.group();
+    map.createFromObjects('Object Layer 1', 2, 'platform', 0, true, false, platforms);
+    platforms.forEach(function(_obj) {
+        _obj.body.immovable = true;
+        _obj.light = new LightObject(_obj, 0, 'platform', 'platform');
+    }, this, true);
+
+
+    walls = game.add.group();
+    map.createFromObjects('Object Layer 1', 1, 'wall', 0, true, false, walls);    
+    walls.forEach(function(_obj) {
+        _obj.body.immovable = true;
+        _obj.light = new LightObject(_obj, 0, 'wall', 'wall');
+    }, this, true);
+
     // sample torch. these should be defined in the tilemap
-    var torch = torches.create(250, 400, 'torch');
-    torch.light = new LightObject(torch, 1, 'unlittorch', 'torch');
-    torch.body.setCircle(torch.light.getRadius());
+    //var torch = torches.create(250, 400, 'torch');
+    //torch.light = new LightObject(torch, 1, 'unlittorch', 'torch');
+    //torch.body.setCircle(torch.light.getRadius());
 
     shots = game.add.group();
 
@@ -201,6 +227,17 @@ function update() {
     game.physics.overlap(shots, torches, lightTorch, null, this);
     game.physics.overlap(shots, platforms, destroyShot, null, this);
 
+    platforms.forEach(function(_obj) {
+        if(_obj.light.isLit()) {
+            game.physics.collide(player, _obj);
+        }
+    }, this, true);
+    walls.forEach(function(_obj) {
+        if(_obj.light.isLit()) {
+            game.physics.collide(player, _obj);
+        }
+    }, this, true);
+
 
     //  Reset the players velocity (movement)
     player.body.velocity.x = 0;
@@ -228,10 +265,10 @@ function update() {
     }
     
     //  Allow the player to jump if they are touching the ground.
-    if (cursors.up.isDown && player.body.onFloor)
+    /*if (cursors.up.isDown && player.body.onFloor)
     {
         player.body.velocity.y = -600;
-    }
+    }*/
 
     // player absorbs nearby light
     if (keyboard.justReleased(Phaser.Keyboard.Z, 50))
@@ -308,6 +345,12 @@ function calculateLights () {
     stars.forEach(function(_star) {
         _star.light.resetTickLighting();
     }, this, true);
+    walls.forEach(function(_star) {
+        _star.light.resetTickLighting();
+    }, this, true);
+    platforms.forEach(function(_star) {
+        _star.light.resetTickLighting();
+    }, this, true);
 
     // is player lit?
     // check self
@@ -326,13 +369,24 @@ function calculateLights () {
         playerLightRadius.body.setCircle(player.light.getRadius());
         //playerLightRadius.body.offset.x = 500;
         game.physics.overlap(playerLightRadius, stars, updateTargetLighting, null, this);
+        game.physics.overlap(playerLightRadius, walls, updateTargetLighting, null, this);
+        game.physics.overlap(playerLightRadius, platforms, updateTargetLighting, null, this);
     }
     // torches lighting stars
     game.physics.overlap(torches, stars, updateTargetLighting, null, this);
 
+    game.physics.overlap(torches, walls, updateTargetLighting, null, this);
+    game.physics.overlap(torches, platforms, updateTargetLighting, null, this);
+
     // update sprites based on lit
     player.light.updateSpriteBasedOnLighting();
     stars.forEach(function(_star) {
+        _star.light.updateSpriteBasedOnLighting();
+    }, this, true);
+    walls.forEach(function(_star) {
+        _star.light.updateSpriteBasedOnLighting();
+    }, this, true);
+    platforms.forEach(function(_star) {
         _star.light.updateSpriteBasedOnLighting();
     }, this, true);
     torches.forEach(function(_torch) {
@@ -407,7 +461,7 @@ LightObject.prototype.owner = null;
 // array of light sprites. first one in is unlit. second is lit
 LightObject.prototype.lightSprites = [];
 
-LightObject.prototype.lightsOnMe = 0;
+LightObject.prototype.lightsOnMe = -2;
 LightObject.prototype.lightsOnMeLastTick = -1;
 
 LightObject.prototype.incrementLightsOnMe = function () {
@@ -440,10 +494,12 @@ LightObject.prototype.updateSpriteBasedOnLighting = function() {
         if(this.isLit())
         {
             this.owner.loadTexture(this.lightSprites[1], 0);
+            this.owner.alpha = 1;
         }
         else
         {
             this.owner.loadTexture(this.lightSprites[0], 0);
+            this.owner.alpha = 0.5;
         }
     }
 }
