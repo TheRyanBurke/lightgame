@@ -1,0 +1,20 @@
+{"frames": {
+
+"fire_sheet_64.png":
+{
+	"frame": {"x":2,"y":2,"w":726,"h":40},
+	"rotated": false,
+	"trimmed": true,
+	"spriteSourceSize": {"x":21,"y":9,"w":726,"h":40},
+	"sourceSize": {"w":768,"h":64}
+}},
+"meta": {
+	"app": "http://www.codeandweb.com/texturepacker ",
+	"version": "1.0",
+	"image": "fire_sheet.png",
+	"format": "RGBA8888",
+	"size": {"w":1024,"h":64},
+	"scale": "1",
+	"smartupdate": "$TexturePacker:SmartUpdate:8dd3a5f2322be53e20d426ff3c704ffe:c43c5a5e438795c323c316e0d394bd65:7e5f0fe7c9f326dce85c6035e95da798$"
+}
+}

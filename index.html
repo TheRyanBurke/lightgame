@@ -14,7 +14,7 @@
 
   <h1>Dark Ages</h1>
   <h3>Ansible Games Submission for Athens Game Jam 2014</h3>
-
+<!--
   <div> 
     <ul>
         <li>Movement: Arrow Keys</li>
@@ -23,7 +23,7 @@
         <li>1/2: Increase/Decrease # of lights held by player</li>
     </ul>
   </div>
-
+-->
 <script type="text/javascript">
 
 var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update, render: render });
@@ -49,9 +49,13 @@ function preload() {
     game.load.image('ground', 'assets/platform.png');
     game.load.image('star', 'assets/star.png');
     game.load.image('diamond', 'assets/diamond.png');
-    game.load.image('torch', 'assets/firstaid.png');
+    game.load.image('torch', 'assets/fire_unlit_64.png');
+    game.load.image('littorch', 'assets/fire_lit_64.png');
+    //game.load.image('animatedtorch', 'assetcs/fire_sheet_64.png');
     game.load.image('unlittorch', 'assets/unlitfirstaid.png');
     game.load.spritesheet('dude', 'assets/dude.png', 32, 48);
+
+    game.load.atlasJSONHash('animatedtorch','assets/fire_sheet.png', 'assets/fire_sheet.json');
 
 }
 
@@ -59,6 +63,7 @@ function preload() {
 var map;
 var layer;
 var player;
+var fireAnimation;
 // blue debug circle showing light radius - could become a feature
 var playerLightCircle = null;
 // hack to clone player as a radial collision object
@@ -90,6 +95,8 @@ function create() {
     //  A simple background for our game
     //game.add.sprite(0, 0, 'background');
     bg = game.add.tileSprite(0, 0, 800, 600, 'background');
+    //fireAnimation = game.add.sprite(64,64,'animatedtorch');
+    //fireAnimation.animations.add('flicker');
     
     bg.fixedToCamera = true;
     
@@ -160,7 +167,7 @@ function create() {
     //  And now we convert all of the Tiled objects with an ID of 34 into sprites within the coins group
     map.createFromObjects('Object Layer 1', 4, 'torch', 0, true, false, torches);
     torches.forEach(function(_torch) {
-        _torch.light = new LightObject(_torch, 1, 'unlittorch', 'torch');
+        _torch.light = new LightObject(_torch, 1, 'torch', 'littorch');
         _torch.body.setCircle(_torch.light.getRadius());
     }, this, true);
 
@@ -178,11 +185,6 @@ function create() {
         _obj.body.immovable = true;
         _obj.light = new LightObject(_obj, 0, 'wall', 'wall');
     }, this, true);
-
-    // sample torch. these should be defined in the tilemap
-    //var torch = torches.create(250, 400, 'torch');
-    //torch.light = new LightObject(torch, 1, 'unlittorch', 'torch');
-    //torch.body.setCircle(torch.light.getRadius());
 
     shots = game.add.group();
 
@@ -202,7 +204,7 @@ function create() {
     //  Our controls.
     cursors = game.input.keyboard.createCursorKeys();
 
-    keyboard = game.input.keyboard;    
+    keyboard = game.input.keyboard;
 
     
     game.camera.follow(player);
@@ -508,6 +510,7 @@ LightObject.prototype.updateSpriteBasedOnLightsHeld = function()
 {
     if(this.getLightsHeld() > 0) {
         this.owner.loadTexture(this.lightSprites[1], 0);
+        //this.owner.animations.play('flicker',15,true);
     }
     else 
     {
