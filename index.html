@@ -127,9 +127,7 @@ function create() {
     playerLightRadius = game.add.sprite(32, game.world.height - 150, 
         'playerghost');
     playerLightRadius.body.setCircle(player.light.getRadius());
-    // unneeded?
-    playerLightRadius.body.offset.x = player.body.width / 2;
-    playerLightRadius.body.offset.y = player.body.height / 2;
+
 
     //  Our controls.
     cursors = game.input.keyboard.createCursorKeys();
@@ -191,8 +189,8 @@ function update() {
     }
 
     // light radius follows player
-    playerLightRadius.body.x = player.body.x;
-    playerLightRadius.body.y = player.body.y;
+    playerLightRadius.body.x = player.body.x + player.body.width / 2;
+    playerLightRadius.body.y = player.body.y + player.body.height / 2;
 
 }
 
@@ -233,8 +231,6 @@ function calculateLights () {
     if(player.light.isBright())
     {
         playerLightRadius.body.setCircle(player.light.getRadius());
-        //playerLightRadius.body.offset.x = player.body.width / 2;
-        //playerLightRadius.body.offset.y = player.body.height / 2;
         game.physics.overlap(playerLightRadius, stars, updateStarLighting, null, this);
     }
 
