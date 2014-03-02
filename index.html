@@ -18,7 +18,7 @@
   <div> 
     <ul>
         <li>Movement: Arrow Keys</li>
-        <li>1/2/3: Set player illumination to unlit/partial/lit</li>
+        <li>1/2: Increase/Decrease # of lights held by player</li>
     </ul>
   </div>
 
@@ -58,11 +58,7 @@ var keyboard;
 
 var stars;
 
-var litState = {
-    UNLIT: 0,
-    PARTIAL: 1,
-    LIT: 2
-};
+var BRIGHTNESS_RADIUS = 50; //pixels of radius per light held
 
 // phaser game init
 function create() {
@@ -102,7 +98,7 @@ function create() {
     //player.animations.add('right', [5, 6, 7, 8], 10, true);
 
     //light init
-    player.light = new LightObject(player, litState.LIT, 100, 'dude', 'dude', 'player');
+    player.light = new LightObject(player, 1, 'dude', 'player');
 
 
     //  Finally some stars to collect
@@ -121,31 +117,30 @@ function create() {
         star.body.bounce.y = 0.7 + Math.random() * 0.2;
 
         // add light property
-        star.light = new LightObject(star, litState.UNLIT, 0, 'star', 'star', 'diamond');
+        star.light = new LightObject(star, 0, 'star', 'diamond');
     }
 
-    // player light radius sprite
-    // hint - its the same sprite as player
+    /**
+        hack to make a light radius collision-capable object follow
+        the player around. presently takes the form of a black outline
+    */
     playerLightRadius = game.add.sprite(32, game.world.height - 150, 
         'playerghost');
     playerLightRadius.body.setCircle(player.light.getRadius());
+    // unneeded?
     playerLightRadius.body.offset.x = player.body.width / 2;
     playerLightRadius.body.offset.y = player.body.height / 2;
 
     //  Our controls.
     cursors = game.input.keyboard.createCursorKeys();
 
-    keyboard = game.input.keyboard;
-    
+    keyboard = game.input.keyboard;    
 }
 
 // phaser game loop
 function update() {
 
-    // set all stars to unlit at start of tick
-    stars.forEach(function(_star) {
-        _star.light.setLighting(litState.UNLIT);
-    }, this, true);
+    calculateLights();
 
     //  Collide the player and the stars with the platforms
     game.physics.collide(player, platforms);
@@ -153,8 +148,6 @@ function update() {
 
     //  Checks to see if the player overlaps with any of the stars, if he does call the collectStar function
     game.physics.overlap(player, stars, collectStar, null, this);
-
-    game.physics.overlap(playerLightRadius, stars, updateStarLighting, null, this);
 
     //  Reset the players velocity (movement)
     player.body.velocity.x = 0;
@@ -188,17 +181,13 @@ function update() {
     }
 
     //mod lighting of player -- testing only
-    if (keyboard.isDown(Phaser.Keyboard.ONE))
+    if (keyboard.justReleased(Phaser.Keyboard.ONE, 50))
     {
-        player.light.setLighting(litState.UNLIT);
+        player.light.incrementLightsHeld();
     }
-    else if (keyboard.isDown(Phaser.Keyboard.TWO))
+    else if (keyboard.justReleased(Phaser.Keyboard.TWO, 50))
     {
-        player.light.setLighting(litState.PARTIAL);
-    }
-    else if (keyboard.isDown(Phaser.Keyboard.THREE))
-    {
-        player.light.setLighting(litState.LIT);
+        player.light.decrementLightsHeld();
     }
 
     // light radius follows player
@@ -213,19 +202,55 @@ function render () {
     {
         playerLightCircle.destroy();
     }
-    playerLightCircle = game.add.graphics(0, 0);  //init rect
-    playerLightCircle.lineStyle(2, 0x0000FF, 1); // width, color (0x0000FF), alpha (0 -> 1) // required settings
-    playerLightCircle.beginFill(0xFFFF0B, 0) // color (0xFFFF0B), alpha (0 -> 1) // required settings
+    if(player.light.isBright())
+    {
+        playerLightCircle = game.add.graphics(0, 0);  //init rect
+        playerLightCircle.lineStyle(2, 0x0000FF, 1); // width, color (0x0000FF), alpha (0 -> 1) // required settings
+        playerLightCircle.beginFill(0xFFFF0B, 0) // color (0xFFFF0B), alpha (0 -> 1) // required settings
 
-    playerLightCircle.drawCircle(player.center.x, player.center.y, player.light.getRadius());
-    playerLightCircle.endFill();
+        playerLightCircle.drawCircle(player.center.x, player.center.y, player.light.getRadius());
+        playerLightCircle.endFill();
+    }
+}
+
+function calculateLights () {
+    // reset lightingChangedThisTick
+    player.light.resetTickLighting();
+    stars.forEach(function(_star) {
+        _star.light.resetTickLighting();
+    }, this, true);
+
+    // is player lit?
+    // check self
+    if(player.light.isBright())
+    {
+        player.light.incrementLightsOnMe();
+    }
+
+    // check other entities lighting player
+
+    // is player illuminating things?
+    if(player.light.isBright())
+    {
+        playerLightRadius.body.setCircle(player.light.getRadius());
+        //playerLightRadius.body.offset.x = player.body.width / 2;
+        //playerLightRadius.body.offset.y = player.body.height / 2;
+        game.physics.overlap(playerLightRadius, stars, updateStarLighting, null, this);
+    }
+
+    // update sprites based on lit
+    player.light.updateSpriteBasedOnLighting();
+    stars.forEach(function(_star) {
+        _star.light.updateSpriteBasedOnLighting();
+    }, this, true);
+
 }
 
 // from phaser demo
 function collectStar (player, star) {
     
     // Removes the star from the screen only if player is lit
-    if(player.light.getLighting() === litState.LIT)
+    if(player.light.isLit())
     {
         star.kill();
     }
@@ -233,49 +258,86 @@ function collectStar (player, star) {
 }
 
 function updateStarLighting (_playerLightRadius, _star) {
-    _star.light.setLighting(litState.LIT);
+    _star.light.incrementLightsOnMe();
 }
 
-function LightObject(_owner, _litState, _radius, _unlitSprite, _partialSprite, _litSprite) {
+function LightObject(_owner, _startingLights, _unlitSprite, _litSprite) {
     this.owner = _owner;
-    this.lightSprites = [_unlitSprite, _partialSprite, _litSprite];
-    this.setLighting(_litState);
-    this.setRadius(_radius);
-}
-
-LightObject.prototype.owner = null;
-LightObject.prototype.lightSprites = [];
-
-
-
-// state of this object being lit
-LightObject.prototype.lit = litState.UNLIT;
-
-LightObject.prototype.setLighting = function(_litState) {
-    if(this.lit != _litState) 
-    {
-        this.lit = _litState;
-        this.updateSpriteBasedOnLighting();
+    this.lightSprites = [_unlitSprite, _litSprite];
+    for(var i = 0; i < _startingLights; i++) {
+        this.incrementLightsHeld();
     }
 }
 
-LightObject.prototype.getLighting = function() {
-    return this.lit;
+// sprite object that owns this light property
+LightObject.prototype.owner = null;
+
+// array of light sprites. first one in is unlit. second is lit
+LightObject.prototype.lightSprites = [];
+
+LightObject.prototype.lightsOnMe = 0;
+LightObject.prototype.lightsOnMeLastTick = 0;
+
+LightObject.prototype.incrementLightsOnMe = function () {
+    this.lightsOnMe++;
+}
+
+// state of this object being lit
+LightObject.prototype.isLit = function() {
+    return (this.lightsOnMe > 0);
+}
+
+// optimization to prevent needless texture loading
+LightObject.prototype.resetTickLighting = function() {
+    this.lightsOnMeLastTick = this.lightsOnMe;
+    this.lightsOnMe = 0;
+}
+
+LightObject.prototype.lightingChangedThisTick = function () {
+    return (this.lightsOnMe != this.lightsOnMeLastTick);
 }
 
 // how far away does thie entity light others
-LightObject.prototype.radius = 0;
-
-LightObject.prototype.setRadius = function(_radius) {
-    this.radius = _radius;
-}
-
 LightObject.prototype.getRadius = function() {
-    return this.radius;
+    return this.getLightsHeld() * BRIGHTNESS_RADIUS;
 }
 
+// doc warned loadTexture() is to be used sparingly!
 LightObject.prototype.updateSpriteBasedOnLighting = function() {
-    this.owner.loadTexture(this.lightSprites[this.getLighting()], 0);
+    if(this.lightingChangedThisTick()) {
+        if(this.isLit())
+        {
+            this.owner.loadTexture(this.lightSprites[1], 0);
+        }
+        else
+        {
+            this.owner.loadTexture(this.lightSprites[0], 0);
+        }
+    }
+}
+
+// does this entity cast light
+LightObject.prototype.isBright = function() {
+    return (this.getLightsHeld() > 0);
+}
+
+// how many lights does this object own? usually 0 or 1. player can have more
+LightObject.prototype.lightsHeld = 0;
+
+LightObject.prototype.decrementLightsHeld = function() {
+    this.lightsHeld--;
+    if(this.lightsHeld < 0) 
+    {
+        this.lightsHeld = 0;
+    }
+}
+
+LightObject.prototype.incrementLightsHeld = function() {
+    this.lightsHeld++;
+}
+
+LightObject.prototype.getLightsHeld = function() {
+    return this.lightsHeld;
 }
 
 
