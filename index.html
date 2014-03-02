@@ -35,6 +35,8 @@ function preload() {
   game.load.image('playerghost', 'assets/playerghost.png');
   game.load.image('background', 'assets/bg_environment.png');
 
+  game.load.image('sparkle', 'assets/sparkle.png');
+
 
     // phaser demo
     game.load.image('sky', 'assets/sky.png');
@@ -54,6 +56,10 @@ var player;
 var playerLightCircle = null;
 // hack to clone player as a radial collision object
 var playerLightRadius;
+
+var deluminator;
+var deluminatorCircle = null;
+
 var platforms;
 var cursors;
 var keyboard;
@@ -61,6 +67,7 @@ var keyboard;
 var stars;
 
 var BRIGHTNESS_RADIUS = 50; //pixels of radius per light held
+var DELUMINATOR_RADIUS = 110; //range you can steal lights
 
 // phaser game init
 function create() {
@@ -125,7 +132,7 @@ function create() {
     torches = game.add.group();
 
     var torch = torches.create(250, 400, 'torch');
-    torch.light = new LightObject(torch, 1, 'unlittorch', 'torch');
+    torch.light = new LightObject(torch, 0, 'unlittorch', 'torch');
     torch.body.setCircle(torch.light.getRadius());
 
     /**
@@ -136,11 +143,24 @@ function create() {
         'playerghost');
     playerLightRadius.body.setCircle(player.light.getRadius());
 
+    deluminator = game.add.sprite(32, game.world.height - 150,
+        'playerghost');
+    deluminator.body.setCircle(DELUMINATOR_RADIUS);
+
 
     //  Our controls.
     cursors = game.input.keyboard.createCursorKeys();
 
     keyboard = game.input.keyboard;    
+
+
+    // test emitter
+    /*var p = game.add.emitter(torch.body.x, torch.body.y, 10);
+
+    p.makeParticles('sparkle');
+
+    p.start(false, 500, 100);
+*/
 }
 
 // phaser game loop
@@ -154,6 +174,9 @@ function update() {
 
     //  Checks to see if the player overlaps with any of the stars, if he does call the collectStar function
     game.physics.overlap(player, stars, collectStar, null, this);
+
+    // deluminator overlap
+    game.physics.overlap(deluminator, torches, highlightTorch, null, this);
 
     //  Reset the players velocity (movement)
     player.body.velocity.x = 0;
@@ -200,6 +223,10 @@ function update() {
     playerLightRadius.body.x = player.body.x + player.body.width / 2;
     playerLightRadius.body.y = player.body.y + player.body.height / 2;
 
+    // deluminator follows player
+    deluminator.body.x = player.body.x + player.body.width / 2;
+    deluminator.body.y = player.body.y + player.body.height / 2;
+
 }
 
 function render () {
@@ -217,6 +244,17 @@ function render () {
         playerLightCircle.drawCircle(player.center.x, player.center.y, player.light.getRadius());
         playerLightCircle.endFill();
     }
+
+    if(deluminatorCircle != null)
+    {
+        deluminatorCircle.destroy();
+    }
+    deluminatorCircle = game.add.graphics(0, 0);  //init rect
+    deluminatorCircle.lineStyle(2, 0x00FF00, 0.5); // width, color (0x0000FF), alpha (0 -> 1) // required settings
+    deluminatorCircle.beginFill(0xFFFF0B, 0) // color (0xFFFF0B), alpha (0 -> 1) // required settings
+
+    deluminatorCircle.drawCircle(player.center.x, player.center.y, DELUMINATOR_RADIUS);
+    deluminatorCircle.endFill();
 }
 
 function calculateLights () {
@@ -264,6 +302,17 @@ function collectStar (player, star) {
         star.kill();
     }
 
+}
+
+function highlightTorch (_deluminator, _torch) {
+    if(_torch.light.getLightsHeld() > 0)
+    {
+        var p = game.add.emitter(_torch.body.x, _torch.body.y, 10);
+
+        p.makeParticles('sparkle');
+
+        p.start(true, 500, 100);
+    }
 }
 
 function updateTargetLighting (_source, _target) {
