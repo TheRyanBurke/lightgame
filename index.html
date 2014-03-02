@@ -132,7 +132,7 @@ function create() {
     torches = game.add.group();
 
     var torch = torches.create(250, 400, 'torch');
-    torch.light = new LightObject(torch, 0, 'unlittorch', 'torch');
+    torch.light = new LightObject(torch, 1, 'unlittorch', 'torch');
     torch.body.setCircle(torch.light.getRadius());
 
     /**
@@ -208,6 +208,18 @@ function update() {
     {
         player.body.velocity.y = -600;
     }
+
+    // player absorbs nearby light
+    if (keyboard.justReleased(Phaser.Keyboard.Z, 50))
+    {
+        game.physics.overlap(deluminator, torches, stealLight, null, this);
+    }
+
+    // player shoots a light
+    if (keyboard.justReleased(Phaser.Keyboard.X, 50))
+    {
+        //game.physics.overlap(deluminator, torches, stealLight, null, this);
+    }    
 
     //mod lighting of player -- testing only
     if (keyboard.justReleased(Phaser.Keyboard.ONE, 50))
@@ -290,6 +302,9 @@ function calculateLights () {
     stars.forEach(function(_star) {
         _star.light.updateSpriteBasedOnLighting();
     }, this, true);
+    torches.forEach(function(_torch) {
+        _torch.light.updateSpriteBasedOnLightsHeld();
+    }, this, true);
 
 }
 
@@ -312,6 +327,14 @@ function highlightTorch (_deluminator, _torch) {
         p.makeParticles('sparkle');
 
         p.start(true, 500, 100);
+    }
+}
+
+function stealLight (_deluminator, _torch) {
+    if(_torch.light.getLightsHeld() > 0)
+    {
+        player.light.incrementLightsHeld();
+        _torch.light.decrementLightsHeld();
     }
 }
 
@@ -339,7 +362,7 @@ LightObject.prototype.owner = null;
 LightObject.prototype.lightSprites = [];
 
 LightObject.prototype.lightsOnMe = 0;
-LightObject.prototype.lightsOnMeLastTick = 0;
+LightObject.prototype.lightsOnMeLastTick = -1;
 
 LightObject.prototype.incrementLightsOnMe = function () {
     this.lightsOnMe++;
@@ -367,6 +390,9 @@ LightObject.prototype.getRadius = function() {
 
 // doc warned loadTexture() is to be used sparingly!
 LightObject.prototype.updateSpriteBasedOnLighting = function() {
+    if(this.owner.key === "torch") {
+        console.log("lighting torch");
+    }
     if(this.lightingChangedThisTick()) {
         if(this.isLit())
         {
@@ -376,6 +402,17 @@ LightObject.prototype.updateSpriteBasedOnLighting = function() {
         {
             this.owner.loadTexture(this.lightSprites[0], 0);
         }
+    }
+}
+
+LightObject.prototype.updateSpriteBasedOnLightsHeld = function()
+{
+    if(this.getLightsHeld() > 0) {
+        this.owner.loadTexture(this.lightSprites[1], 0);
+    }
+    else 
+    {
+        this.owner.loadTexture(this.lightSprites[0], 0);
     }
 }
 
