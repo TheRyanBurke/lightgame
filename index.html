@@ -23,6 +23,8 @@ var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create
 function preload() {
 
   // dark ages
+  game.load.tilemap('level1', 'assets/level1.json', null, Phaser.Tilemap.TILED_JSON);
+  game.load.image('tiles', 'assets/tiles.png');
   game.load.image('player', 'assets/player.png');
   game.load.image('playerghost', 'assets/playerghost.png');
   game.load.image('background', 'assets/bg_environment.png');
@@ -38,7 +40,8 @@ function preload() {
 }
 
 // game definitions
-
+var map;
+var layer;
 var player;
 // blue debug circle showing light radius - could become a feature
 var playerLightCircle = null;
@@ -47,6 +50,8 @@ var playerLightRadius;
 var platforms;
 var cursors;
 var keyboard;
+var bg;
+
 
 var stars;
 
@@ -58,28 +63,40 @@ var litState = {
 
 // phaser game init
 function create() {
-
+	
+	game.stage.backgroundColor = '#000000';
     //  A simple background for our game
-    game.add.sprite(0, 0, 'background');
+    //game.add.sprite(0, 0, 'background');
+    bg = game.add.tileSprite(0, 0, 800, 600, 'background');
+    
+    bg.fixedToCamera = true;
+    
+	map = game.add.tilemap('level1');
+	map.addTilesetImage('tiles');
+	map.setCollisionByExclusion([ 0 ]);
+
+	layer = map.createLayer('Tile Layer 1');
+	 
+	layer.resizeWorld();
 
     //  The platforms group contains the ground and the 2 ledges we can jump on
-    platforms = game.add.group();
+    //platforms = game.add.group();
 
     // Here we create the ground.
-    var ground = platforms.create(0, game.world.height - 64, 'ground');
+   // var ground = platforms.create(0, game.world.height - 64, 'ground');
 
     //  Scale it to fit the width of the game (the original sprite is 400x32 in size)
-    ground.scale.setTo(2, 2);
+   // ground.scale.setTo(2, 2);
 
     //  This stops it from falling away when you jump on it
-    ground.body.immovable = true;
+    //ground.body.immovable = true;
 
     //  Now let's create two ledges
-    var ledge = platforms.create(400, 400, 'ground');
-    ledge.body.immovable = true;
+    //var ledge = platforms.create(400, 400, 'ground');
+    //ledge.body.immovable = true;
 
-    ledge = platforms.create(-150, 250, 'ground');
-    ledge.body.immovable = true;
+    //ledge = platforms.create(-150, 250, 'ground');
+    //ledge.body.immovable = true;
 
     // The player and its settings
     player = game.add.sprite(32, game.world.height - 150, 'player');
@@ -129,6 +146,7 @@ function create() {
 
     keyboard = game.input.keyboard;
     
+    game.camera.follow(player);
 }
 
 // phaser game loop
@@ -140,8 +158,8 @@ function update() {
     }, this, true);
 
     //  Collide the player and the stars with the platforms
-    game.physics.collide(player, platforms);
-    game.physics.collide(stars, platforms);
+    game.physics.collide(player, layer);
+    game.physics.collide(stars, layer);
 
     //  Checks to see if the player overlaps with any of the stars, if he does call the collectStar function
     game.physics.overlap(player, stars, collectStar, null, this);
@@ -174,7 +192,7 @@ function update() {
     }
     
     //  Allow the player to jump if they are touching the ground.
-    if (cursors.up.isDown && player.body.touching.down)
+    if (cursors.up.isDown && player.body.onFloor)
     {
         player.body.velocity.y = -600;
     }
@@ -209,7 +227,7 @@ function render () {
     playerLightCircle.lineStyle(2, 0x0000FF, 1); // width, color (0x0000FF), alpha (0 -> 1) // required settings
     playerLightCircle.beginFill(0xFFFF0B, 0) // color (0xFFFF0B), alpha (0 -> 1) // required settings
 
-    playerLightCircle.drawCircle(player.center.x, player.center.y, player.light.getRadius());
+    playerLightCircle.drawCircle(player.body.x + (player.body.width / 2), player.body.y + (player.body.height / 2), player.light.getRadius());
     playerLightCircle.endFill();
 }
 
