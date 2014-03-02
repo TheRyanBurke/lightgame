@@ -159,14 +159,7 @@ function create() {
 
     keyboard = game.input.keyboard;    
 
-
-    // test emitter
-    /*var p = game.add.emitter(torch.body.x, torch.body.y, 10);
-
-    p.makeParticles('sparkle');
-
-    p.start(false, 500, 100);
-*/
+    
 }
 
 // phaser game loop
@@ -422,9 +415,6 @@ LightObject.prototype.getRadius = function() {
 
 // doc warned loadTexture() is to be used sparingly!
 LightObject.prototype.updateSpriteBasedOnLighting = function() {
-    if(this.owner.key === "torch") {
-        console.log("lighting torch");
-    }
     if(this.lightingChangedThisTick()) {
         if(this.isLit())
         {
