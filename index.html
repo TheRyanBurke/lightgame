@@ -41,6 +41,8 @@ function preload() {
     game.load.image('ground', 'assets/platform.png');
     game.load.image('star', 'assets/star.png');
     game.load.image('diamond', 'assets/diamond.png');
+    game.load.image('torch', 'assets/firstaid.png');
+    game.load.image('unlittorch', 'assets/unlitfirstaid.png');
     game.load.spritesheet('dude', 'assets/dude.png', 32, 48);
 
 }
@@ -119,6 +121,12 @@ function create() {
         // add light property
         star.light = new LightObject(star, 0, 'star', 'diamond');
     }
+
+    torches = game.add.group();
+
+    var torch = torches.create(250, 400, 'torch');
+    torch.light = new LightObject(torch, 1, 'unlittorch', 'torch');
+    torch.body.setCircle(torch.light.getRadius());
 
     /**
         hack to make a light radius collision-capable object follow
@@ -224,6 +232,8 @@ function calculateLights () {
     {
         player.light.incrementLightsOnMe();
     }
+    // torches lighting player?
+    game.physics.overlap(torches, player, updateTargetLighting, null, this);
 
     // check other entities lighting player
 
@@ -231,8 +241,11 @@ function calculateLights () {
     if(player.light.isBright())
     {
         playerLightRadius.body.setCircle(player.light.getRadius());
-        game.physics.overlap(playerLightRadius, stars, updateStarLighting, null, this);
+        //playerLightRadius.body.offset.x = 500;
+        game.physics.overlap(playerLightRadius, stars, updateTargetLighting, null, this);
     }
+    // torches lighting stars
+    game.physics.overlap(torches, stars, updateTargetLighting, null, this);
 
     // update sprites based on lit
     player.light.updateSpriteBasedOnLighting();
@@ -253,8 +266,9 @@ function collectStar (player, star) {
 
 }
 
-function updateStarLighting (_playerLightRadius, _star) {
-    _star.light.incrementLightsOnMe();
+function updateTargetLighting (_source, _target) {
+    _target.light.incrementLightsOnMe();
+    console.log("updating lighting");
 }
 
 function LightObject(_owner, _startingLights, _unlitSprite, _litSprite) {
