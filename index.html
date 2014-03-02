@@ -18,6 +18,7 @@
   <div> 
     <ul>
         <li>Movement: Arrow Keys</li>
+        <li>Z: Steal light from nearby source</li>
         <li>1/2: Increase/Decrease # of lights held by player</li>
     </ul>
   </div>
@@ -65,6 +66,8 @@ var cursors;
 var keyboard;
 
 var stars;
+
+var shots;
 
 var BRIGHTNESS_RADIUS = 50; //pixels of radius per light held
 var DELUMINATOR_RADIUS = 110; //range you can steal lights
@@ -135,6 +138,8 @@ function create() {
     torch.light = new LightObject(torch, 1, 'unlittorch', 'torch');
     torch.body.setCircle(torch.light.getRadius());
 
+    shots = game.add.group();
+
     /**
         hack to make a light radius collision-capable object follow
         the player around. presently takes the form of a black outline
@@ -178,6 +183,11 @@ function update() {
     // deluminator overlap
     game.physics.overlap(deluminator, torches, highlightTorch, null, this);
 
+    // collide shots
+    game.physics.overlap(shots, torches, lightTorch, null, this);
+    game.physics.overlap(shots, platforms, destroyShot, null, this);
+
+
     //  Reset the players velocity (movement)
     player.body.velocity.x = 0;
 
@@ -216,9 +226,16 @@ function update() {
     }
 
     // player shoots a light
-    if (keyboard.justReleased(Phaser.Keyboard.X, 50))
+    if (keyboard.justReleased(Phaser.Keyboard.X, 40))
     {
-        //game.physics.overlap(deluminator, torches, stealLight, null, this);
+        if(player.light.getLightsHeld() > 0) {
+            player.light.decrementLightsHeld();
+        
+            var shot = shots.create(player.body.x, player.body.y, 'star');
+            shot.body.velocity.x = 200;
+            shot.body.velocity.y = -300;
+            shot.body.gravity.y = 500;
+        }
     }    
 
     //mod lighting of player -- testing only
@@ -330,6 +347,18 @@ function highlightTorch (_deluminator, _torch) {
     }
 }
 
+function lightTorch (_shot, _torch) {
+    if(_torch.light.getLightsHeld() === 0)
+    {
+        _torch.light.incrementLightsHeld();
+    }
+    _shot.kill();
+}
+
+function destroyShot (_shot, _platform) {
+    _shot.kill();
+}
+
 function stealLight (_deluminator, _torch) {
     if(_torch.light.getLightsHeld() > 0)
     {
@@ -344,7 +373,9 @@ function updateTargetLighting (_source, _target) {
 
 // bullshit workaround because library doesnt do what it says it does
 function updatePlayerLighting (_source, _target) {
-    player.light.incrementLightsOnMe();
+    if(_target.light.getLightsHeld() > 0) {
+        player.light.incrementLightsOnMe();
+    }
 }
 
 function LightObject(_owner, _startingLights, _unlitSprite, _litSprite) {
