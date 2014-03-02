@@ -233,7 +233,7 @@ function calculateLights () {
         player.light.incrementLightsOnMe();
     }
     // torches lighting player?
-    game.physics.overlap(torches, player, updateTargetLighting, null, this);
+    game.physics.overlap(torches, player, updatePlayerLighting, null, this);
 
     // check other entities lighting player
 
@@ -268,7 +268,11 @@ function collectStar (player, star) {
 
 function updateTargetLighting (_source, _target) {
     _target.light.incrementLightsOnMe();
-    console.log("updating lighting");
+}
+
+// bullshit workaround because library doesnt do what it says it does
+function updatePlayerLighting (_source, _target) {
+    player.light.incrementLightsOnMe();
 }
 
 function LightObject(_owner, _startingLights, _unlitSprite, _litSprite) {
