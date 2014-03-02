@@ -33,7 +33,9 @@ function preload() {
 
   // dark ages
   game.load.tilemap('level1', 'assets/level1.json', null, Phaser.Tilemap.TILED_JSON);
+  game.load.tilemap('level2', 'assets/level2.json', null, Phaser.Tilemap.TILED_JSON);
   game.load.image('tiles', 'assets/tiles.png');
+  game.load.image('tilesheet', 'assets/tilesheet.png');
   game.load.image('player', 'assets/player.png');
   game.load.image('playerghost', 'assets/playerghost.png');
   game.load.image('background', 'assets/bg_environment.png');
@@ -87,8 +89,8 @@ function create() {
     
     bg.fixedToCamera = true;
     
-	map = game.add.tilemap('level1');
-	map.addTilesetImage('tiles');
+	map = game.add.tilemap('level2');
+	map.addTilesetImage('tilesheet');
 	map.setCollisionByExclusion([ 0 ]);
 
 	layer = map.createLayer('Tile Layer 1');
