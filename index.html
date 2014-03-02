@@ -151,6 +151,7 @@ function create() {
 
     torches = game.add.group();
 
+    // sample torch. these should be defined in the tilemap
     var torch = torches.create(250, 400, 'torch');
     torch.light = new LightObject(torch, 1, 'unlittorch', 'torch');
     torch.body.setCircle(torch.light.getRadius());
